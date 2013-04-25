@@ -30,7 +30,7 @@
 #include "zend_exceptions.h"
 
 #define PHP_SAMPLE_DESCRIPTOR_RES_NAME "山寨文件描述符"
-
+#define PHP_SAMPLE4_EXTVER "山寨文件描述符"
 /* If you declare any globals in php_my_fopen.h uncomment this:*/
 ZEND_DECLARE_MODULE_GLOBALS(my_fopen)
 
@@ -38,6 +38,8 @@ ZEND_DECLARE_MODULE_GLOBALS(my_fopen)
 /* True global resources - no need for thread safety here */
 static int le_my_fopen;
 zend_class_entry *class_entry = NULL;
+
+
 int my_open_globals_id;
 
 typedef struct _old_one {
@@ -50,7 +52,7 @@ int le_old_one;
 /* {{{ 10替换为01，并将01前面1移至最左边 */
 /*static void strMove(char* arr,unsigned int len){
         int i,j,k;
-  	for(i=0;i< len-1;i++){
+		for(i=0;i< len-1;i++){
 			if(arr[i]=='1'&&arr[i+1]=='0'){
 				arr[i] = '0';
 				arr[i+1] = '1';
@@ -114,6 +116,15 @@ const zend_function_entry my_open_functions[] = {
 	PHP_FE(getYig,NULL) 
 	PHP_FE(chant,NULL) 
 	PHP_FE(findMonster,NULL)
+	PHP_FE(test_callable,NULL)
+	PHP_FE(get_variable,NULL) 
+	PHP_FE(test_eval_string,NULL) 
+	PHP_FE(check_val,NULL) 
+	PHP_FE(test_call_user_function,NULL) 
+	PHP_FE(test_call_function,NULL)
+	PHP_FE(md52,NULL)
+	PHP_FE(thread_wrok,NULL)
+	PHP_FE(makevalue,NULL)
 	//PHP_FE(call,NULL)	
 	PHP_FE(php_syntax_check,NULL)
 	PHP_FE(str_reverse,NULL)
@@ -179,7 +190,28 @@ const zend_function_entry class_functions[]={
 	PHP_FE_END	/* Must be the last line in my_fopen_functions[] */
 };
 
+static zend_function_entry i_myinterface_method[]={
+    ZEND_ABSTRACT_ME(i_myinterface, hello, NULL) //注意这里的null指的是arginfo
+    {NULL,NULL,NULL}
+};
+
+
+
 static int le_sample_descriptor;
+
+/* 自定义声明常量*/
+void php_sample4_register_boolean_constant(char *name, uint len,zend_bool bval, int flags, int module_number TSRMLS_DC)
+{
+        zend_constant c;
+
+        ZVAL_BOOL(&c.value, bval);
+        c.flags = CONST_CS | CONST_PERSISTENT;
+        c.name = zend_strndup(name, len - 1);
+        c.name_len = len;
+        c.module_number = module_number;
+        zend_register_constant(&c TSRMLS_CC);
+}
+
 static zend_bool fuck_global_callback(char *name, uint name_len TSRMLS_DC) {
 	zval *tmp;
 	MAKE_STD_ZVAL(tmp);
@@ -188,6 +220,8 @@ static zend_bool fuck_global_callback(char *name, uint name_len TSRMLS_DC) {
 	ZEND_SET_SYMBOL(&EG(symbol_table), name, tmp);
 	return 0;
 }
+
+
 
 void rlyeh_old_one_pefree(zend_rsrc_list_entry *rsrc TSRMLS_DC) {
     old_one *god = rsrc->ptr;
@@ -200,8 +234,22 @@ void rlyeh_old_one_pefree(zend_rsrc_list_entry *rsrc TSRMLS_DC) {
     pefree(god, 1);
 }
 
+zend_bool php_sample4_autoglobal_callback(char *name, uint name_len TSRMLS_DC)
+{
+    zval *sample4_val;
+    int i;
+    MAKE_STD_ZVAL(sample4_val);
+    array_init(sample4_val);
+    for(i = 0; i < 10; i++) {
+        add_next_index_long(sample4_val, i);
+    }
+    ZEND_SET_SYMBOL(&EG(symbol_table), "_SAMPLE4", sample4_val);
+    return 0;
+}
+
 
 zend_class_entry *person_ce;
+zend_class_entry *i_myinterface_ce;
 
 PHP_MINIT_FUNCTION(my_open) {
 
@@ -218,7 +266,7 @@ PHP_MINIT_FUNCTION(my_open) {
 	REGISTER_INI_ENTRIES();
 	*/
 
-	zend_class_entry Person;
+	zend_class_entry Person,ice;
 	INIT_CLASS_ENTRY(Person, "Person" , class_functions);  //第二个参数为类名，第三个参数为函数表
 	//person_ce =zend_register_internal_class_ex( &person , NULL , NULL TSRMLS_CC);  //注册类
 	person_ce =zend_register_internal_class_ex( &Person , NULL , NULL TSRMLS_CC);  //注册类
@@ -227,15 +275,37 @@ PHP_MINIT_FUNCTION(my_open) {
 
 	zend_declare_property_null(person_ce, ZEND_STRL("_name"),ZEND_ACC_PUBLIC TSRMLS_CC); //初始化属性
 	
+	/*interface*/
+	//zend_class_entry ;
+    INIT_CLASS_ENTRY(ice, "i_myinterface", i_myinterface_method);
+    i_myinterface_ce = zend_register_internal_interface(&ice TSRMLS_CC);
+    /*interface end*/
+
 
 	le_sample_descriptor = zend_register_list_destructors_ex(NULL, NULL, PHP_SAMPLE_DESCRIPTOR_RES_NAME,module_number);
+	
 	zend_register_auto_global(ZEND_STRL("_FUCK"),fuck_global_callback TSRMLS_CC);
+
+
+	 zend_register_auto_global("_SAMPLE4", sizeof("_SAMPLE4") - 1
+	#ifdef ZEND_ENGINE_2
+                , php_sample4_autoglobal_callback
+	#endif
+                TSRMLS_CC);
 
 	REGISTER_INI_ENTRIES();
 
 	le_old_one = zend_register_list_destructors_ex(NULL, rlyeh_old_one_pefree, "Great Old One", module_number);
 
-/*
+	//REGISTER_STRING_CONSTANT("SAMPLE4_VERSION",PHP_SAMPLE4_EXTVER, CONST_CS | CONST_PERSISTENT);
+	  
+	zend_register_string_constant("SAMPLE4_VERSION",sizeof("SAMPLE4_VERSION"),PHP_SAMPLE4_EXTVER,CONST_CS | CONST_PERSISTENT,module_number TSRMLS_CC);
+   	php_sample4_register_boolean_constant("FUCKPHP",sizeof("FUCKPHP"),PHP_SAMPLE4_EXTVER,CONST_CS | CONST_PERSISTENT,module_number TSRMLS_CC);
+	//或者php_sample4_register_boolean_constant()自定义函数
+
+    return SUCCESS;
+	
+	/*
    if( zend_call_method( NULL, *ce, NULL, 
                      "getmodelbyid", 
                      strlen("getmodelbyid"), 
@@ -286,6 +356,25 @@ PHP_MINFO_FUNCTION(my_open) {
 	php_info_print_table_start();
 	php_info_print_table_header(2, "my_open support", "enabled");
 	php_info_print_table_end();
+	
+	//char *php_info_html_esc(char *str TSRMLS_DC)
+//这个函数是php_escape_html_entities()的一个封装，htmlentites() 函数的底层实现。该函数返回的字符串通过emalloc()创建，并在使用后必须使用 efree()函数释放掉。
+/*
+void php_info_print_table_start(void)
+void php_info_print_table_end(void)
+//输出开/关表格式所需的标签。HTML输出是与CLI输出一样，表现为一个简单的换行。
+
+void php_info_print_table_header(int cols, ...)
+void php_info_print_table_colspan_header(int cols, char *header)
+//输出表头行。第一个函数在可变参数列表中的char *元素外面的每一列都会输出一对th标签，第二个函数会在指定列数外面输出一对th标签。
+
+void php_info_print_table_row(int cols, ...)
+void php_info_print_table_row_ex(int cols, char *class, ...)
+//第一个函数在可变参数列表中的char *元素外面的每一行都会输出一对td标签，第二个函数会在指定列数外面输出一对td标签。当不在HTML中 输出的时候，两个函数将没有任何差别。
+
+void php_info_print_hr(void)
+	*/
+	
 
 	/* Remove comments if you have entries in php.ini
 	DISPLAY_INI_ENTRIES();
@@ -523,6 +612,71 @@ PHP_FUNCTION(test_dump)
     efree(args);
 }
 
+PHP_FUNCTION(test_callable)
+{
+	zval *var, **callable_name = NULL;
+	char *name;
+	char *error;
+	zend_bool retval;
+	zend_bool syntax_only = 0;
+	int check_flags = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z|bZ", &var,
+							  &syntax_only, &callable_name) == FAILURE) {
+		return;
+	}
+	
+	if (syntax_only) {
+		check_flags |= IS_CALLABLE_CHECK_SYNTAX_ONLY;
+	}
+	if (ZEND_NUM_ARGS() > 2) {
+		retval = zend_is_callable_ex(var, NULL, check_flags, &name, NULL, NULL, &error TSRMLS_CC);
+		zval_dtor(*callable_name);
+		ZVAL_STRING(*callable_name, name, 0);
+	} else {
+		retval = zend_is_callable_ex(var, NULL, check_flags, NULL, NULL, NULL, &error TSRMLS_CC);
+	}
+	if (error) {
+		/* ignore errors */
+		efree(error);
+	}
+
+	RETURN_BOOL(retval);
+}
+
+PHP_FUNCTION(get_variable) {
+	zval **server, **os;
+	if(SUCCESS != zend_symtable_find(&EG(symbol_table), "_SERVER", sizeof("_SERVER"), (void **)&server)) {
+		RETURN_BOOL(0);
+	}
+	if (Z_TYPE_PP(server) == IS_ARRAY) {
+		if(SUCCESS == zend_symtable_find(Z_ARRVAL_P(*server), "OS", sizeof("OS"), (void **)&os)) {
+			RETURN_ZVAL(*os, 1, 0);
+		}
+	}
+	RETURN_ZVAL(*server, 1, 0);
+}
+
+/*
+zend_eval_string 说明：
+执行类似PHP脚本中的eval()语句。
+参数表：
+int zend_eval_string(char *str, zval *retval_ptr, char *string_name TSRMLS_DC);
+参数	说明
+str	需要执行的PHP语句
+retval_ptr	执行的返回值
+string_name	标示名，这里的标示主要是让用户区分来自于哪个扩展，如果语句运行异常，则会抛出相关的错误，让用户辨识来自于string_name的扩展
+范例中的内容很简单，第一个zend_eval_string首先声明了一个名为test_func的PHP函数，第二个zend_eval_string直接调用这个函数，其实2句语句可以写在一起，结果也是一样的，分开来的主要目的就是让retval_ptr显示的更清晰一些。
+*/
+PHP_FUNCTION(test_eval_string) {
+	zval *result;
+	MAKE_STD_ZVAL(result);
+	zend_eval_string("function test_func($a) {return $a.'_test';}", NULL, "Shop Plus Test" TSRMLS_CC);
+	zend_eval_string("test_func('eval')", result, "Shop Plus Test" TSRMLS_CC);
+	RETURN_ZVAL(result, 1, 0);
+}
+
+
 PHP_FUNCTION(file_open) {
 	char *filename = NULL;
 	char *mode = NULL;
@@ -542,6 +696,262 @@ PHP_FUNCTION(file_open) {
 	}
 
 	ZEND_REGISTER_RESOURCE(return_value, fp, le_sample_descriptor);
+}
+/*
+compare_function
+说明：
+比较两个不同的变量，返回其结果，返回结果形式与C语言中的strcmp类似
+附言：
+此方法就是PHP中的数据比较方法，使用上类似于PHP中的>、< 、==，这些比较方法（===不包含在内，PHP另外提供了一个叫做is_identical_function的方法来做强等于）。
+范例代码：
+*/
+
+PHP_FUNCTION(check_val) {
+	zval *v1, *v2;
+	zval *result;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz", &v1, &v2) == FAILURE) {
+		return;
+	}
+	MAKE_STD_ZVAL(result);
+	compare_function(result, v1, v2 TSRMLS_CC);
+	RETURN_ZVAL(result, 0, 0);
+}
+
+ZEND_FUNCTION(test_call_user_function) {
+	zval function_name, *retval, **argv[1], *param;
+	MAKE_STD_ZVAL(retval);
+	MAKE_STD_ZVAL(param);
+	ZVAL_STRING(param, "-1.5", 1);
+	argv[0] = &param;
+
+	ZVAL_STRING(&function_name, "abs", 1);
+	if (call_user_function(EG(function_table), NULL, &function_name, retval, 1, *argv TSRMLS_CC) == FAILURE) {
+		RETURN_BOOL(0);
+	}
+	else {
+		RETURN_ZVAL(retval, 1, 0);
+	}
+}
+
+/*
+zend_call_function
+
+说明：
+
+执行指定的函数并返回结果，函数包括内部函数与用户函数。
+
+参数表：
+
+int zend_call_function(zend_fcall_info *fci, zend_fcall_info_cache *fci_cache TSRMLS_DC);
+
+参数	说明
+fci	zend function call info，zend函数调用信息结构体
+fci_cache	zend function call info cache，zend函数调用信息缓存结构体
+zend_fcall_info与zend_fcall_info_cache结构原型：
+
+typedef struct _zend_fcall_info {
+	size_t size;
+	HashTable *function_table;
+	zval *function_name;
+	HashTable *symbol_table;
+	zval **retval_ptr_ptr;
+	zend_uint param_count;
+	zval ***params;
+	zval *object_ptr;
+	zend_bool no_separation;
+} zend_fcall_info;
+
+typedef struct _zend_fcall_info_cache {
+	zend_bool initialized;
+	zend_function *function_handler;
+	zend_class_entry *calling_scope;
+	zend_class_entry *called_scope;
+	zval *object_ptr;
+} zend_fcall_info_cache;
+这2个数据结构我在这里先不仔细阐述，我会在之后的草堂笔记中详细阐述2个结构体的功能。
+
+范例代码：http://www.babafan.com/
+*/
+PHP_FUNCTION(test_call_function) {
+	zend_fcall_info fci;
+	zend_fcall_info_cache fcc;
+	zval *retval;
+	zval *handle = NULL;
+	zval function_name;
+	zval **argv[1];
+
+	ZVAL_STRING(&function_name, "abs", 1);
+	MAKE_STD_ZVAL(handle);
+	ZVAL_STRING(handle, "-1.5", 1);
+
+	argv[0] = &handle;
+	fci.size = sizeof(fci);
+	fci.function_table = EG(function_table);
+	fci.function_name = &function_name;
+	fci.symbol_table = NULL;
+	fci.object_ptr = NULL;
+	fci.retval_ptr_ptr = &retval;
+	fci.param_count = 1;
+	fci.params = argv;
+	fci.no_separation = 0;
+
+	if (zend_call_function(&fci, NULL TSRMLS_CC) == FAILURE) {
+		RETURN_BOOL(0);
+	}
+	else {
+		RETURN_ZVAL(retval, 1, 0);
+	}
+}
+
+PHP_FUNCTION(md52)
+{
+	/*
+	zval **strtomd5;
+	if((ZEND_NUM_ARGS()!= 1) || (zend_get_parameters_ex(1, &strtomd5) != SUCCESS))
+	{
+	   WRONG_PARAM_COUNT;
+	}
+	zend_fcall_info fci;
+	zend_fcall_info_cache fcic = empty_fcall_info_cache;
+	zval *funname,*ret_ptr = NULL;
+	MAKE_STD_ZVAL(funname);
+	ZVAL_STRING(funname, "md5", 1); 
+	zval **param[1];
+
+	param[0] = strtomd5;
+	call_user_function_ex(EG(function_table), NULL, funname, &ret_ptr, 1, param, 0, EG(active_symbol_table));
+	//call_user_function_ex(EG(function_table), NULL, funname, &ret_ptr, 1, param, 0, NULL);
+
+	zval *new_variable;
+
+	MAKE_STD_ZVAL(new_variable);
+	ZVAL_LONG(new_variable,317);
+	ZEND_SET_SYMBOL(&EG(symbol_table), "new_variable_name", new_variable);
+
+	RETVAL_ZVAL(ret_ptr, 1, 0);
+	
+	zval_ptr_dtor(&funname);
+	MAKE_STD_ZVAL(funname);
+	
+	ZVAL_STRING(funname, "gg", 1); 
+
+	char *string_contents = "new_variable_name";
+	zval *var_name;
+	MAKE_STD_ZVAL(var_name);
+
+	ZVAL_STRING(var_name, string_contents, 1); 	
+	
+	zend_printf("c_ext *strtomd5 = %s, func=%s\n", var_name->value.str.val , funname->value.str.val);
+
+	param[0] = &var_name;	
+
+	
+	if(call_user_function_ex(EG(function_table), NULL, funname, &ret_ptr, 1, param, 0, EG(active_symbol_table)) != SUCCESS)
+	{
+	   zend_error(E_ERROR, "Function call failed");
+	}
+
+	zend_printf("c_ext new_variable = %d\n", new_variable->value.lval);
+	efree(funname);
+	efree(var_name);
+	*/
+	
+}
+
+
+
+PHP_FUNCTION(thread_wrok)
+{
+    /*
+	zval *cls=NULL,*zvalue=NULL,*z_method;
+    zval ***params=NULL;
+ 
+    int arg_count = ZEND_NUM_ARGS();
+ 
+    if (arg_count <1 ) {
+        WRONG_PARAM_COUNT;
+    }
+     
+    params = (zval ***) safe_emalloc(sizeof(zval **), arg_count, 0);
+ 
+    if (zend_get_parameters_array_ex(arg_count, params) == FAILURE) {
+        efree(params);
+        RETURN_FALSE;
+    }
+ 
+    z_method=*params[0];
+     
+    if(arg_count>1)
+    {
+        cls=*params[1];
+    }
+ 
+    if ( Z_TYPE_P(z_method) != IS_STRING ) 
+    {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "First param must be string");
+        RETURN_FALSE;
+    } 
+    //---------------------------------------------------------
+    /*
+    char *method;
+    int method_len;
+    if (
+        zend_parse_parameters( ZEND_NUM_ARGS() TSRMLS_CC, "s|o", &method, &method_len, &cls) == FAILURE
+    )
+    {
+        RETURN_FALSE;
+    }
+ 
+    MAKE_STD_ZVAL(z_method);
+ 
+    ZVAL_STRING(z_method, method, 1);
+     
+    if (method && zend_hash_find(Z_ARRVAL_P(method_records), method, method_len + 1, (void**)&zvalue) != FAILURE) 
+    {
+        RETURN_FALSE;
+    }
+ 
+    */
+ 
+    //---------------------------------------------------------
+	/*
+	zval *retval_ptr=NULL;
+    arg_count = arg_count-2>0?arg_count-2:0;
+    if(Z_TYPE_P(cls) == IS_OBJECT || Z_TYPE_P(cls) == IS_STRING )
+    {
+        if (call_user_function_ex(EG(function_table), &cls  , z_method, &retval_ptr, arg_count, arg_count?params+2:NULL , 0, NULL TSRMLS_CC) == SUCCESS) {
+            if (retval_ptr) {       
+                zval_ptr_dtor(&retval_ptr);
+            }
+        } else {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to call class method: %s()", Z_STRVAL_P(z_method));
+            RETURN_FALSE;
+        }
+    }else{
+        if (call_user_function_ex(CG(function_table), NULL, z_method, &retval_ptr, arg_count, arg_count?params+2:NULL , 0, NULL TSRMLS_CC) == SUCCESS )
+        {
+            if (retval_ptr) {       
+                zval_ptr_dtor(&retval_ptr);
+            }
+        } else {
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unable to call %s()", Z_STRVAL_P(z_method));
+            RETURN_FALSE;
+        }
+    }
+ 
+    //efree(z_method);
+ 
+    RETURN_TRUE;*/
+}
+
+PHP_FUNCTION(makevalue) {
+    Z_TYPE_P(return_value) = IS_BOOL;
+    Z_LVAL_P(return_value) = 1;
+   
+	/*
+    Z_TYPE_P(return_value) = IS_LONG;
+    Z_LVAL_P(return_value) = 1;
+	*/
 }
 
 
