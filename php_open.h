@@ -25,7 +25,7 @@ extern zend_module_entry my_open_module_entry;
 #define phpext_my_open_ptr &my_open_module_entry
 
 #ifdef PHP_WIN32
-#  define PHP_MY_OPEN_API __declspec(dllexport)
+#	define PHP_MY_OPEN_API __declspec(dllexport)
 #elif defined(__GNUC__) && __GNUC__ >= 4
 #	define PHP_MY_OPEN_API __attribute__ ((visibility("default")))
 #else
@@ -56,12 +56,21 @@ PHP_FUNCTION(hello_dump);
 PHP_FUNCTION(test_dump);
 PHP_FUNCTION(chant);
 PHP_FUNCTION(getYig);
+PHP_FUNCTION(test_callable);
+PHP_FUNCTION(get_variable);
+PHP_FUNCTION(test_eval_string);
+PHP_FUNCTION(test_call_user_function);
+PHP_FUNCTION(test_call_function);
+PHP_FUNCTION(md52);
+PHP_FUNCTION(check_val) ;
 PHP_FUNCTION(findMonster);
 PHP_FUNCTION(sample_fopen);
 PHP_FUNCTION(sample_fwrite);
 PHP_FUNCTION(sample_fclose);
 PHP_FUNCTION(sample_array);
 PHP_FUNCTION(str_reverse);
+PHP_FUNCTION(thread_wrok);
+PHP_FUNCTION(makevalue);
 
 PHP_METHOD(Person,__construct);
 PHP_METHOD(Person,__destruct);
